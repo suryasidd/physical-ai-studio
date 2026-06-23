@@ -539,7 +539,9 @@ class ExportablePolicyMixin:
             raise NotImplementedError(msg)
 
         if input_sample is None:
+            # Preprocessed sample, matching to_onnx / to_openvino.
             input_sample = self._get_default_export_input_sample()
+
         if input_sample is None:
             msg = (
                 "An input sample must be provided for ExecuTorch export, "
@@ -566,10 +568,16 @@ class ExportablePolicyMixin:
             msg = "executorch package is required for ExecuTorch export. Install with: pip install executorch"
             raise ImportError(msg) from e
 
+        # Drop non-tensor entries (e.g. the raw ``task`` string); the traced
+        # graph only takes tensors.
+        tensor_input_sample = {
+            key: value for key, value in input_sample.items() if isinstance(value, torch.Tensor)
+        }
+
         self.model.eval()
         aten_dialect = torch.export.export(
             self.model,
-            args=(input_sample,),
+            args=(tensor_input_sample,),
             **extra_export_kwargs,
         )
 
@@ -608,11 +616,14 @@ class ExportablePolicyMixin:
         with model_path.open("wb") as f:
             exec_program.write_to_file(f)
 
+        # Declare the preprocessor pipeline and tensor-only input_names.
         self.create_manifest(
             export_dir,
             ExportBackend.EXECUTORCH,
             runner=ComponentSpec.from_class(SinglePass),
-            input_names=list(input_sample.keys()),  # type: ignore[arg-type, union-attr]
+            preprocessors=extra_model_args.preprocessors_specs,
+            postprocessors=extra_model_args.postprocessors_specs,
+            input_names=list(tensor_input_sample.keys()),
             output_names=extra_model_args.output_names,
             input_features=self._to_component_specs(self.inputs_schema or []),
             output_features=self._to_component_specs(self.outputs_schema or []),
