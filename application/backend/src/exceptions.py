@@ -8,7 +8,6 @@ class ResourceType(StrEnum):
 
     PROJECT = "Project"
     ROBOT = "Robot"
-    ROBOT_CALIBRATION = "Robot calibration"
     CAMERA = "Camera"
     ENVIRONMENT = "Environment"
     DATASET = "Dataset"
@@ -70,7 +69,7 @@ class ResourceInUseError(BaseException):
         msg = message or f"{resource_type} with ID {resource_id} cannot be deleted because it is in use."
         super().__init__(
             message=msg,
-            error_code=f"{resource_type}_not_found",
+            error_code=f"{resource_type}_in_use",
             http_status=http.HTTPStatus.CONFLICT,
         )
 

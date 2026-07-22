@@ -83,10 +83,10 @@ git clone https://github.com/open-edge-platform/physical-ai-studio.git
 cd physical-ai-studio
 
 # Install and run backend
-cd application/backend && uv sync --extra xpu # or --extra cpu, --extra cuda
+cd application/backend 
 
-# Start the backend
-./run.sh
+# Start the backend, or use --extra cpu, --extra cuda
+uv run --extra xpu physicalai-studio serve  # or: ./run.sh
 ```
 
 ```bash
@@ -166,7 +166,7 @@ policy.export("./policy", backend="openvino")
 ```python test="skip" reason="requires exported model and environment"
 from physicalai.inference import InferenceModel
 
-policy = InferenceModel.load("./policy")
+policy = InferenceModel("./policy")
 obs, info = env.reset()
 done = False
 
